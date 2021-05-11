@@ -42,14 +42,14 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
         {
             var tables = new List<Table>();
             SqlCommands commands = null;
-            
+
             try
             {
                 if (_options.ShouldGenerateApisForTables())
                 {
                     var dbTables = HandleTables();
                     tables.AddRange(dbTables);
-                    
+
                     _logger.LogInformation("Found {DatabaseTablesCount} tables", dbTables.Count);
                 }
                 else
@@ -59,7 +59,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
 
                 if (_options.SqlCommands?.Any() == true)
                 {
-                    var (queryCommands,  sqlCommands) = HandleCommands(_options.SqlCommands);
+                    var (queryCommands, sqlCommands) = HandleCommands(_options.SqlCommands);
 
                     _logger.LogInformation("Found {QueryCommandCount} query commands and {CommandCount} non query commands", queryCommands.Count,
                         sqlCommands.Count);
@@ -78,7 +78,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
 
                 throw;
             }
-            
+
             _logger.LogInformation("Found schema with {TableCount} tables and {CommandCount} commands", tables.Count, commands?.Count ?? 0);
 
             return (tables, commands);
@@ -141,7 +141,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
                 using (var cmd = _connection.CreateCommand())
                 {
                     var table = ConvertQueryToTable(cmd, sqlCommand);
-                    var columns = GetColumnsForCommand(cmd);
+                    var columns = GetColumnsFromDbCommand(cmd, sqlCommand.Key);
                     table.Columns = columns;
 
                     queryCommands.Add(table);
@@ -193,12 +193,12 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
                 command.CommandText = query;
                 command.CommandTimeout = (int) TimeSpan.FromMinutes(5).TotalSeconds;
 
-                var columns = GetColumnsForCommand(command);
+                var columns = GetColumnsFromDbCommand(command, table.Name);
 
                 return columns;
             }
         }
-        
+
         protected virtual (string Name, string Schema) GetTableNameAndSchemaFromSchemaRow(DataRow row)
         {
             if (row["TABLE_TYPE"].ToString() != "TABLE" && row["TABLE_TYPE"].ToString() != "BASE TABLE")
@@ -242,30 +242,51 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
 
             // don't read schema for INSERT and UPDATE commands
         }
-
-        protected virtual IList<Column> GetColumnsForCommand(DbCommand dbCommand)
+        
+        protected virtual IList<Column> GetColumnsFromDbCommand(DbCommand dbCommand, string tableName)
         {
-            var columns = new List<Column>();
-
-            using (var reader = dbCommand.ExecuteReader())
+            try
             {
-                using (var dtSchema = reader.GetSchemaTable())
-                {
-                    if (dtSchema != null)
-                    {
-                        foreach (DataRow schemaColumn in dtSchema.Rows)
-                        {
-                            var columnName = Convert.ToString(schemaColumn["ColumnName"]);
-                            var dataType = (Type) schemaColumn["DataType"];
-                            var isNullable = (bool) schemaColumn["AllowDBNull"];
+                var columns = new List<Column>();
 
-                            columns.Add(new Column(columnName, dataType, isNullable));
+                using (var reader = dbCommand.ExecuteReader())
+                {
+                    using (var dtSchema = reader.GetSchemaTable())
+                    {
+                        if (dtSchema != null)
+                        {
+                            foreach (DataRow schemaColumn in dtSchema.Rows)
+                            {
+                                Type dataType;
+
+                                // Try to handle scenarios like hierarchyid in SQL Server
+                                var columnName = Convert.ToString(schemaColumn["ColumnName"]);
+                                if (schemaColumn["DataType"] == DBNull.Value)
+                                {
+                                    dataType = typeof(string);
+                                    _logger.LogWarning("Encountered column {ColumnName} in table {TableName} with missing DataType. Falling back to string presentation", columnName, tableName);
+                                }
+                                else
+                                {
+                                    dataType = (Type) schemaColumn["DataType"];
+                                }
+                                
+                                var isNullable = (bool) schemaColumn["AllowDBNull"];
+
+                                columns.Add(new Column(columnName, dataType, isNullable));
+                            }
                         }
                     }
                 }
-            }
 
-            return columns;
+                return columns;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed to get columns using DbCommand with query {Query}", dbCommand.CommandText);
+
+                throw;
+            }
         }
 
         protected virtual Table ConvertQueryToTable(DbCommand cmd, KeyValuePair<string, SqlCommand> sqlCommand)
@@ -315,7 +336,50 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
 
             return table;
         }
-        
+
+        /// <summary>
+        /// Maps DB column type to .NET type: Currently not in use
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        private Dictionary<string, Type> GetDataTypes()
+        {
+            var result = new Dictionary<string, Type>();
+            const string colSqlType = "TypeName";
+            const string colNetType = "DataType";
+
+            var dataTypesSchema = _connection.GetSchema("DATATYPES");
+
+            var sqlTypeColumnIndex = dataTypesSchema.Columns.IndexOf(colSqlType);
+
+            if (sqlTypeColumnIndex < 0)
+            {
+                throw new InvalidOperationException("Data type schema is invalid, no SQL type column found.");
+            }
+
+            var netTypeColumnIndex = dataTypesSchema.Columns.IndexOf(colNetType);
+
+            if (netTypeColumnIndex < 0)
+            {
+                throw new InvalidOperationException("Data type schema is invalid, no .NET type column found.");
+            }
+
+            for (var i = 0; i < dataTypesSchema.Rows.Count; i++)
+            {
+                var row = dataTypesSchema.Rows[i];
+                var sqlTypeName = row.ItemArray[sqlTypeColumnIndex] as string;
+                var netTypeName = row.ItemArray[netTypeColumnIndex] as string;
+
+                if (!string.IsNullOrEmpty(sqlTypeName) && !string.IsNullOrEmpty(netTypeName))
+                {
+                    var type = Type.GetType(netTypeName);
+                    result.Add(sqlTypeName, type);
+                }
+            }
+
+            return result;
+        }
+
         #region IDisposable Support
 
         private bool disposedValue; // To detect redundant calls

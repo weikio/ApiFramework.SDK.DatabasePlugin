@@ -9,6 +9,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
         public string[] Tables { get; set; }
         public string[] ExcludedTables { get; set; }
         public SqlCommands SqlCommands { get; set; }
+        public bool TrimStrings { get; set; }
 
         public bool Includes(string tableName)
         {

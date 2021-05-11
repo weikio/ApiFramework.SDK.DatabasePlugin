@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
@@ -13,12 +14,15 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
     {
         private readonly IConnectionCreator _connectionCreator;
         private readonly Compiler _compiler;
+        private readonly DatabasePluginSettings _databasePluginSettings;
         private readonly ILogger<CodeGenerator> _logger;
 
-        public CodeGenerator(IConnectionCreator connectionCreator, Compiler compiler, ILogger<CodeGenerator> logger)
+        public CodeGenerator(IConnectionCreator connectionCreator, Compiler compiler, DatabasePluginSettings databasePluginSettings,
+            ILogger<CodeGenerator> logger)
         {
             _connectionCreator = connectionCreator;
             _compiler = compiler;
+            _databasePluginSettings = databasePluginSettings;
             _logger = logger;
         }
 
@@ -31,6 +35,14 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
             CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Data.DataRow).Assembly);
             CodeToAssemblyGenerator.ReferenceAssemblyContainingType<ProducesResponseTypeAttribute>();
             CodeToAssemblyGenerator.ReferenceAssembly(_connectionCreator.GetType().Assembly);
+
+            if (_databasePluginSettings.AdditionalReferences?.Any() == true)
+            {
+                foreach (var assembly in _databasePluginSettings.AdditionalReferences)
+                {
+                    CodeToAssemblyGenerator.ReferenceAssembly(assembly);
+                }
+            }
 
             var assemblyCode = GenerateCode(tableSchema, nonQueryCommands, databaseOptions);
 
@@ -64,6 +76,15 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
             source.UsingNamespace("Microsoft.AspNetCore.Http");
             source.UsingNamespace("Microsoft.AspNetCore.Mvc");
             source.UsingNamespace("Microsoft.Extensions.Logging");
+            
+            if (_databasePluginSettings.AdditionalNamespaces?.Any() == true)
+            {
+                foreach (var ns in _databasePluginSettings.AdditionalNamespaces)
+                {
+                    source.UsingNamespace(ns);
+                }
+            }
+            
             source.WriteLine("");
 
             _logger.LogInformation("Generating code for tables and commands");
@@ -79,14 +100,17 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
                 });
             }
 
-            foreach (var command in nonQueryCommands)
+            if (nonQueryCommands?.Any() == true)
             {
-                source.WriteNamespaceBlock(command, namespaceBlock =>
+                foreach (var command in nonQueryCommands)
                 {
-                    _logger.LogDebug("Generating code for non query command {NonQueryCommand}", command.Key);
+                    source.WriteNamespaceBlock(command, namespaceBlock =>
+                    {
+                        _logger.LogDebug("Generating code for non query command {NonQueryCommand}", command.Key);
                     
-                    namespaceBlock.WriteNonQueryCommandApiClass(command);
-                });
+                        namespaceBlock.WriteNonQueryCommandApiClass(command);
+                    });
+                }
             }
 
             _logger.LogInformation("Code generated for tables and commands");

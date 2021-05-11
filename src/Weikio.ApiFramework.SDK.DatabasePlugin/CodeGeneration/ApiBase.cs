@@ -87,6 +87,11 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
                                     {
                                         var dbColumnValue = reader[column.Key] == DBNull.Value ? null : reader[column.Key];
 
+                                        if (Configuration.TrimStrings && dbColumnValue is string dbString)
+                                        {
+                                            dbColumnValue = dbString.Trim();
+                                        }
+                                        
                                         generatedType.InvokeMember(column.Value,
                                             BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,
                                             Type.DefaultBinder, item, new[] { dbColumnValue });
@@ -100,7 +105,14 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
 
                                     foreach (var column in selectedColumns)
                                     {
-                                        item[column.Value] = reader[column.Key] == DBNull.Value ? null : reader[column.Key];
+                                        var dbColumnValue = reader[column.Key] == DBNull.Value ? null : reader[column.Key];
+
+                                        if (Configuration.TrimStrings && dbColumnValue is string dbString)
+                                        {
+                                            dbColumnValue = dbString.Trim();
+                                        }
+
+                                        item[column.Value] = dbColumnValue;
                                     }
 
                                     yield return item;

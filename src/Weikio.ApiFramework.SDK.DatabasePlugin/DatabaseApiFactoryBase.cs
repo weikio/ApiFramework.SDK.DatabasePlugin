@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
-using SqlKata.Compilers;
 using Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration;
 
 namespace Weikio.ApiFramework.SDK.DatabasePlugin
@@ -18,19 +17,17 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
             _loggerFactory = loggerFactory;
         }
 
-        protected List<Type> Generate(DatabaseOptionsBase configuration,Func<DatabaseOptionsBase, 
-            IConnectionCreator> connectionCreatorFactory, Func<string, string> sqlColumnSelectFactory,
-            Compiler compiler)
+        protected List<Type> Generate(DatabaseOptionsBase configuration, DatabasePluginSettings pluginSettings)
         {
             try
             {
-                using var re = new SchemaReader(configuration, connectionCreatorFactory.Invoke(configuration), sqlColumnSelectFactory,
+                using var re = new SchemaReader(configuration, pluginSettings.ConnectionCreatorFactory.Invoke(configuration), pluginSettings.SqlColumnSelectFactory,
                     _loggerFactory.CreateLogger<SchemaReader>());
 
                 re.Connect();
                 var schema = re.GetSchema();
                 
-                var generator = new CodeGenerator(connectionCreatorFactory.Invoke(configuration), compiler, _loggerFactory.CreateLogger<CodeGenerator>());
+                var generator = new CodeGenerator(pluginSettings.ConnectionCreatorFactory.Invoke(configuration), pluginSettings.Compiler, pluginSettings, _loggerFactory.CreateLogger<CodeGenerator>());
                 var assembly = generator.GenerateAssembly(schema.Tables, schema.Commands, configuration);
 
                 var result = assembly.GetExportedTypes()
