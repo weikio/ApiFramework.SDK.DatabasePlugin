@@ -21,6 +21,8 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
                 }
             }
         }
+        
+        public string CommandSchemaText { get; set; }
 
         public string DataTypeName { get; set; }
 

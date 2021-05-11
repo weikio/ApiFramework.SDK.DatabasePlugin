@@ -10,7 +10,6 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
         public string[] ExcludedTables { get; set; }
         public SqlCommands SqlCommands { get; set; }
         public bool TrimStrings { get; set; }
-
         public bool Includes(string tableName)
         {
             if (ExcludedTables?.Any() != true && Tables?.Any() != true)

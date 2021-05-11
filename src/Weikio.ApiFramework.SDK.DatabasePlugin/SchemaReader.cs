@@ -133,6 +133,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
             {
                 if (sqlCommand.Value.IsNonQuery())
                 {
+                    _logger.LogInformation("Handling non query command {CommandName}", sqlCommand.Key);
                     HandleNonQueryCommand(sqlCommand, nonQueryCommands);
 
                     continue;
@@ -140,7 +141,10 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
 
                 using (var cmd = _connection.CreateCommand())
                 {
+                    _logger.LogInformation("Handling query command {CommandName}", sqlCommand.Key);
+
                     var table = ConvertQueryToTable(cmd, sqlCommand);
+                    
                     var columns = GetColumnsFromDbCommand(cmd, sqlCommand.Key);
                     table.Columns = columns;
 
@@ -261,16 +265,20 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
 
                                 // Try to handle scenarios like hierarchyid in SQL Server
                                 var columnName = Convert.ToString(schemaColumn["ColumnName"]);
+
                                 if (schemaColumn["DataType"] == DBNull.Value)
                                 {
                                     dataType = typeof(string);
-                                    _logger.LogWarning("Encountered column {ColumnName} in table {TableName} with missing DataType. Falling back to string presentation", columnName, tableName);
+
+                                    _logger.LogWarning(
+                                        "Encountered column {ColumnName} in table {TableName} with missing DataType. Falling back to string presentation",
+                                        columnName, tableName);
                                 }
                                 else
                                 {
                                     dataType = (Type) schemaColumn["DataType"];
                                 }
-                                
+
                                 var isNullable = (bool) schemaColumn["AllowDBNull"];
 
                                 columns.Add(new Column(columnName, dataType, isNullable));
@@ -292,6 +300,12 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
         protected virtual Table ConvertQueryToTable(DbCommand cmd, KeyValuePair<string, SqlCommand> sqlCommand)
         {
             cmd.CommandText = sqlCommand.Value.CommandText;
+
+            if (!string.IsNullOrWhiteSpace(sqlCommand.Value.CommandSchemaText))
+            {
+                cmd.CommandText = sqlCommand.Value.CommandSchemaText;
+            }
+            
             cmd.CommandTimeout = (int) TimeSpan.FromMinutes(5).TotalSeconds;
 
             if (sqlCommand.Value.Parameters != null)
