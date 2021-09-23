@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="MinVer" Version="2.0.0" PrivateAssets="all" />
-    <PackageReference Include="Weikio.ApiFramework.SDK" Version="1.0.0-alpha.0.96" />
+    <PackageReference Include="Weikio.ApiFramework.SDK" Version="1.0.0" />
     <PackageReference Include="Weikio.TypeGenerator" Version="1.3.4" />
     <PackageReference Include="DynamicODataToSQL" Version="1.0.4" />
   </ItemGroup>
