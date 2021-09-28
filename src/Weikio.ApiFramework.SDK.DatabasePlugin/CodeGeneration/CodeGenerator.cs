@@ -30,19 +30,11 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
 
         public Assembly GenerateAssembly(IList<Table> tableSchema, SqlCommands nonQueryCommands, DatabaseOptionsBase databaseOptions)
         {
-            CodeToAssemblyGenerator = new CodeToAssemblyGenerator();
+            CodeToAssemblyGenerator = new CodeToAssemblyGenerator(true, default, _databasePluginSettings.AdditionalReferences);
             CodeToAssemblyGenerator.ReferenceAssembly(typeof(Console).Assembly);
             CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Data.DataRow).Assembly);
             CodeToAssemblyGenerator.ReferenceAssemblyContainingType<ProducesResponseTypeAttribute>();
             CodeToAssemblyGenerator.ReferenceAssembly(_connectionCreator.GetType().Assembly);
-
-            if (_databasePluginSettings.AdditionalReferences?.Any() == true)
-            {
-                foreach (var assembly in _databasePluginSettings.AdditionalReferences)
-                {
-                    CodeToAssemblyGenerator.ReferenceAssembly(assembly);
-                }
-            }
 
             var assemblyCode = GenerateCode(tableSchema, nonQueryCommands, databaseOptions);
 
