@@ -31,13 +31,32 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
         {
             var fields = new List<string>();
 
+            if (Configuration == null)
+            {
+                throw new ArgumentNullException(nameof(Configuration), "Configuration is required");
+            }
+
+            if (_connectionCreator == null)
+            {
+                throw new ArgumentNullException(nameof(_connectionCreator), "ConnectionCreator is required");
+            }
+
+            if (Logger == null)
+            {
+                throw new ArgumentNullException(nameof(Logger), "Logger is required");
+            }
+            
+            Logger.LogDebug("Prerequisites ok, proceeding creating the query");
+            
             using (var conn = _connectionCreator.CreateConnection(Configuration))
             {
                 await conn.OpenAsync();
+                Logger.LogDebug("Connection opened");
 
                 using (var cmd = conn.CreateCommand())
                 {
                     var queryAndParameters = CreateQuery(TableName, select, filter, orderby, top, skip, count, fields);
+                    Logger.LogDebug("Query created. Query: {Query}", queryAndParameters.Query);
 
                     cmd.CommandText = queryAndParameters.Query;
 
@@ -77,8 +96,12 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
                     {
                         using (var reader = await cmd.ExecuteReaderAsync())
                         {
+                            Logger.LogDebug("Opened reader");
                             while (await reader.ReadAsync())
                             {
+                                
+                                Logger.LogDebug("Line read, mapping to result item");
+
                                 if (generatedType != null)
                                 {
                                     var item = Activator.CreateInstance(generatedType);
