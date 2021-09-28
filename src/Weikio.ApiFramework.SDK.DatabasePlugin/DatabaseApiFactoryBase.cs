@@ -21,13 +21,13 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
         {
             try
             {
-                using var re = new SchemaReader(configuration, pluginSettings.ConnectionCreatorFactory.Invoke(configuration), pluginSettings.SqlColumnSelectFactory,
+                using var re = new SchemaReader(configuration, configuration.CreateConnection(), pluginSettings.SqlColumnSelectFactory,
                     _loggerFactory.CreateLogger<SchemaReader>());
 
                 re.Connect();
                 var schema = re.GetSchema();
                 
-                var generator = new CodeGenerator(pluginSettings.ConnectionCreatorFactory.Invoke(configuration), pluginSettings.Compiler, pluginSettings, _loggerFactory.CreateLogger<CodeGenerator>());
+                var generator = new CodeGenerator(pluginSettings, _loggerFactory.CreateLogger<CodeGenerator>());
                 var assembly = generator.GenerateAssembly(schema.Tables, schema.Commands, configuration);
 
                 var result = assembly.GetExportedTypes()

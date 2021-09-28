@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
 {
-    public abstract class CommandApiBase<T> : ApiBase<T> where T : DtoBase, new()
+    public abstract class CommandApiBase<T, TConfigurationType> : ApiBase<T, TConfigurationType> where T : DtoBase, new() where TConfigurationType : DatabaseOptionsBase
     {
         protected override QueryData CreateQuery(string tableName, string select, string filter, string orderby, int? top, int? skip, bool? count, List<string> fields)
         {
@@ -19,7 +19,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
             return new QueryData { Query = query, Parameters = cmdParameters };
         }
 
-        protected CommandApiBase(ILogger<ApiBase<T>> logger) : base(logger)
+        protected CommandApiBase(ILogger<CommandApiBase<T, TConfigurationType>> logger) : base(logger)
         {
         }
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
@@ -8,16 +9,15 @@ using Weikio.TypeGenerator.Types;
 
 namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
 {
-    public abstract class ApiBase<T> where T : DtoBase, new()
+    public abstract class ApiBase<T, TConfigurationType> where T : DtoBase, new() where TConfigurationType : DatabaseOptionsBase
     {
-        protected ILogger<ApiBase<T>> Logger { get; }
+        protected ILogger<ApiBase<T, TConfigurationType>> Logger { get; }
 
-        protected ApiBase(ILogger<ApiBase<T>> logger)
+        protected ApiBase(ILogger<ApiBase<T, TConfigurationType>> logger)
         {
             Logger = logger;
         }
 
-        private readonly IConnectionCreator _connectionCreator = Cache.ConnectionCreator;
         protected abstract string TableName { get; }
         protected abstract Dictionary<string, string> ColumnMap { get; }
         protected abstract bool IsSqlCommand { get; }
@@ -25,7 +25,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
         protected List<Tuple<string, object>> CommandParameters { get; set; }
         private static ConcurrentDictionary<string, Type> _cachedTypes = new ConcurrentDictionary<string, Type>();
 
-        public DatabaseOptionsBase Configuration { get; set; }
+        public TConfigurationType Configuration { get; set; }
         
         protected async IAsyncEnumerable<object> RunSelect(string select, string filter, string orderby, int? top, int? skip, bool? count)
         {
@@ -36,11 +36,6 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
                 throw new ArgumentNullException(nameof(Configuration), "Configuration is required");
             }
 
-            if (_connectionCreator == null)
-            {
-                throw new ArgumentNullException(nameof(_connectionCreator), "ConnectionCreator is required");
-            }
-
             if (Logger == null)
             {
                 throw new ArgumentNullException(nameof(Logger), "Logger is required");
@@ -48,15 +43,15 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
             
             Logger.LogDebug("Prerequisites ok, proceeding creating the query");
             
-            using (var conn = _connectionCreator.CreateConnection(Configuration))
+            using (var conn = Configuration.CreateConnection())
             {
                 await conn.OpenAsync();
-                Logger.LogDebug("Connection opened");
+                Logger.LogTrace("Connection opened");
 
                 using (var cmd = conn.CreateCommand())
                 {
                     var queryAndParameters = CreateQuery(TableName, select, filter, orderby, top, skip, count, fields);
-                    Logger.LogDebug("Query created. Query: {Query}", queryAndParameters.Query);
+                    Logger.LogTrace("Query created. Query: {Query}", queryAndParameters.Query);
 
                     cmd.CommandText = queryAndParameters.Query;
 
@@ -96,11 +91,11 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
                     {
                         using (var reader = await cmd.ExecuteReaderAsync())
                         {
-                            Logger.LogDebug("Opened reader");
+                            Logger.LogTrace("Opened reader");
                             while (await reader.ReadAsync())
                             {
                                 
-                                Logger.LogDebug("Line read, mapping to result item");
+                                Logger.LogTrace("Line read, mapping to result item");
 
                                 if (generatedType != null)
                                 {

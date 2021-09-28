@@ -1,9 +1,12 @@
-﻿using System.Linq;
+﻿using System;
+using System.Data.Common;
+using System.Linq;
 using System.Text.RegularExpressions;
+using SqlKata.Compilers;
 
 namespace Weikio.ApiFramework.SDK.DatabasePlugin
 {
-    public class DatabaseOptionsBase
+    public abstract class DatabaseOptionsBase
     {
         public string ConnectionString { get; set; }
         public string[] Tables { get; set; }
@@ -70,5 +73,9 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
 
             return new Regex(regex, RegexOptions.Compiled);
         }
+
+        public abstract DbConnection CreateConnection();
+
+        public abstract Compiler CreateCompiler();
     }
 }

@@ -10,23 +10,21 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
     public class SchemaReader : IDisposable
     {
         private readonly DatabaseOptionsBase _options;
-        private readonly IConnectionCreator _connectionCreator;
         private readonly Func<string, string> _sqlColumnSelectFactory;
         private readonly ILogger<SchemaReader> _logger;
         private DbConnection _connection;
 
-        public SchemaReader(DatabaseOptionsBase options, IConnectionCreator connectionCreator, Func<string, string> sqlColumnSelectFactory,
+        public SchemaReader(DatabaseOptionsBase options, DbConnection connection, Func<string, string> sqlColumnSelectFactory,
             ILogger<SchemaReader> logger)
         {
             _options = options;
-            _connectionCreator = connectionCreator;
+            _connection = connection;
             _sqlColumnSelectFactory = sqlColumnSelectFactory;
             _logger = logger;
         }
 
         public void Connect()
         {
-            _connection = _connectionCreator.CreateConnection(_options);
             _connection.Open();
         }
 
@@ -81,6 +79,8 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
 
             _logger.LogInformation("Found schema with {TableCount} tables and {CommandCount} commands", tables.Count, commands?.Count ?? 0);
 
+            _connection.Dispose();
+            
             return (tables, commands);
         }
 

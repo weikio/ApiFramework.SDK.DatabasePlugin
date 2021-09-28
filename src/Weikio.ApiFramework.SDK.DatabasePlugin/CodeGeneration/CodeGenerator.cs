@@ -5,23 +5,18 @@ using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using SqlKata.Compilers;
 using Weikio.TypeGenerator;
 
 namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
 {
     public class CodeGenerator
     {
-        private readonly IConnectionCreator _connectionCreator;
-        private readonly Compiler _compiler;
         private readonly DatabasePluginSettings _databasePluginSettings;
         private readonly ILogger<CodeGenerator> _logger;
 
-        public CodeGenerator(IConnectionCreator connectionCreator, Compiler compiler, DatabasePluginSettings databasePluginSettings,
+        public CodeGenerator(DatabasePluginSettings databasePluginSettings,
             ILogger<CodeGenerator> logger)
         {
-            _connectionCreator = connectionCreator;
-            _compiler = compiler;
             _databasePluginSettings = databasePluginSettings;
             _logger = logger;
         }
@@ -34,7 +29,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
             CodeToAssemblyGenerator.ReferenceAssembly(typeof(Console).Assembly);
             CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Data.DataRow).Assembly);
             CodeToAssemblyGenerator.ReferenceAssemblyContainingType<ProducesResponseTypeAttribute>();
-            CodeToAssemblyGenerator.ReferenceAssembly(_connectionCreator.GetType().Assembly);
+            CodeToAssemblyGenerator.ReferenceAssembly(databaseOptions.GetType().Assembly);
 
             var assemblyCode = GenerateCode(tableSchema, nonQueryCommands, databaseOptions);
 
@@ -88,7 +83,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
                     _logger.LogDebug("Generating code for table {Table}", table.Name);
                     namespaceBlock.WriteDataTypeClass(table);
 
-                    namespaceBlock.WriteApiClass(table, databaseOptions, _connectionCreator, _compiler);
+                    namespaceBlock.WriteApiClass(table, databaseOptions);
                 });
             }
 

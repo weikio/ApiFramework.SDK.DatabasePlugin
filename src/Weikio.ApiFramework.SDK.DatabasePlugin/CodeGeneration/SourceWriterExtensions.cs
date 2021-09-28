@@ -43,26 +43,16 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
 
             writer.WriteLine("");
 
-            // writer.WriteLine("public object this[string propertyName]");
-            // writer.WriteLine("{");
-            // writer.WriteLine("get{return this.GetType().GetProperty(propertyName).GetValue(this, null);}");
-            // writer.WriteLine("set{this.GetType().GetProperty(propertyName).SetValue(this, value, null);}");
-            // writer.FinishBlock(); // Finish the this-block
-
             writer.FinishBlock(); // Finish the class
         }
 
-        public static void WriteApiClass(this StringBuilder writer, Table table, DatabaseOptionsBase options, IConnectionCreator connectionCreator,
-            Compiler compiler)
+        public static void WriteApiClass(this StringBuilder writer, Table table, DatabaseOptionsBase options)
         {
-            Cache.ConnectionCreator = connectionCreator;
-            Cache.DbCompiler = compiler;
-
             var apiClassName = GetApiClassName(table);
 
             if (table.SqlCommand != null)
             {
-                writer.WriteLine($"public class {apiClassName} : CommandApiBase<{GetDataTypeName(table)}>");
+                writer.WriteLine($"public class {apiClassName} : CommandApiBase<{GetDataTypeName(table)}, {options.GetType().FullName}>");
                 writer.WriteLine("{");
 
                 writer.WriteLine($"public {apiClassName}(Microsoft.Extensions.Logging.ILogger<{apiClassName}> logger) : base(logger)");
@@ -75,7 +65,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
             }
             else
             {
-                writer.WriteLine($"public class {apiClassName} : TableApiBase<{GetDataTypeName(table)}>");
+                writer.WriteLine($"public class {apiClassName} : TableApiBase<{GetDataTypeName(table)}, {options.GetType().FullName}>");
                 writer.WriteLine("{");
                             
                 writer.WriteLine($"public {apiClassName}(Microsoft.Extensions.Logging.ILogger<{apiClassName}> logger) : base(logger)");
