@@ -25,17 +25,17 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
 
         public Assembly GenerateAssembly(IList<Table> tableSchema, SqlCommands nonQueryCommands, DatabaseOptionsBase databaseOptions)
         {
-            CodeToAssemblyGenerator = new CodeToAssemblyGenerator(true, default, _databasePluginSettings.AdditionalReferences);
-            CodeToAssemblyGenerator.ReferenceAssembly(typeof(Console).Assembly);
-            CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Data.DataRow).Assembly);
-            CodeToAssemblyGenerator.ReferenceAssemblyContainingType<ProducesResponseTypeAttribute>();
-            CodeToAssemblyGenerator.ReferenceAssembly(databaseOptions.GetType().Assembly);
-
             var assemblyCode = GenerateCode(tableSchema, nonQueryCommands, databaseOptions);
 
             try
             {
-                CodeToAssemblyGenerator.ReferenceAssembly(GetType().Assembly);
+                CodeToAssemblyGenerator = new CodeToAssemblyGenerator(true, default, _databasePluginSettings.AdditionalReferences);
+                CodeToAssemblyGenerator.ReferenceAssembly(typeof(Console).Assembly);
+                CodeToAssemblyGenerator.ReferenceAssembly(typeof(System.Data.DataRow).Assembly);
+                CodeToAssemblyGenerator.ReferenceAssemblyContainingType<ProducesResponseTypeAttribute>();
+                CodeToAssemblyGenerator.ReferenceAssembly(databaseOptions.GetType().Assembly);
+                CodeToAssemblyGenerator.ReferenceAssembly(typeof(SqlKata.Column).Assembly);
+                CodeToAssemblyGenerator.ReferenceAssembly(typeof(CodeGenerator).Assembly);
 
                 _logger.LogInformation("Generating assembly from code");
                 var result = CodeToAssemblyGenerator.GenerateAssembly(assemblyCode);
