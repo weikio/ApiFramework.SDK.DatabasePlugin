@@ -9,7 +9,7 @@
     <Description>SDK for database plugins for API Framework.</Description>
     <PackageDescription>SDK for database plugins for API Framework.</PackageDescription>
     <PackageProjectUrl>https://weik.io</PackageProjectUrl>
-    <Copyright>©2021 Weik.io</Copyright>
+    <Copyright>©2022 Weik.io</Copyright>
     <PackageId>Weikio.ApiFramework.SDK.DatabasePlugin</PackageId>
     <Product>Weikio.ApiFramework.SDK.DatabasePlugin</Product>
     <AssemblyName>Weikio.ApiFramework.SDK.DatabasePlugin</AssemblyName>
@@ -23,9 +23,10 @@
 
   <ItemGroup>
     <PackageReference Include="MinVer" Version="2.0.0" PrivateAssets="all" />
-    <PackageReference Include="Weikio.ApiFramework.SDK" Version="1.0.0" />
-    <PackageReference Include="Weikio.TypeGenerator" Version="1.3.4" />
-    <PackageReference Include="DynamicODataToSQL" Version="1.0.4" />
+    <PackageReference Include="Weikio.ApiFramework.SDK" Version="1.3.0-beta" />
+    <PackageReference Include="Weikio.TypeGenerator" Version="1.4.1" />
+    <PackageReference Include="DynamicODataToSQL" Version="1.0.5" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3"/>
   </ItemGroup>
 
   <ItemGroup>

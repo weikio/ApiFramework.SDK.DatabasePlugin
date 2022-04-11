@@ -100,6 +100,24 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
                 }
             }
 
+            if (databaseOptions.IncludeDirectQuery)
+            {
+                _logger.LogDebug("Including Direct Query API based on the configuration");
+                 
+                source.WriteNamespaceBlock("DirectQuery", namespaceBlock =>
+                {
+                    _logger.LogDebug("Generating code for direct query api");
+                    
+                    namespaceBlock.WriteDirectQueryApiClass(databaseOptions);
+                });
+                
+                // result.Add(typeof(DirectQueryApi));
+            }
+            else
+            {
+                _logger.LogDebug("Direct Query API is not included based on the configuration");
+            }
+            
             _logger.LogInformation("Code generated for tables and commands");
 
             return source.ToString();

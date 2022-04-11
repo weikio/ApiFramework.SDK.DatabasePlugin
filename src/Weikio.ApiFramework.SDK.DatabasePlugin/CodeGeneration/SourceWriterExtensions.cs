@@ -10,6 +10,16 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
 {
     public static class SourceWriterExtensions
     {
+        public static void WriteNamespaceBlock(this StringBuilder writer, string className,
+            Action<StringBuilder> contentProvider)
+        {
+            writer.Namespace(typeof(DatabaseApiFactoryBase).Namespace + ".Generated" + className);
+
+            contentProvider.Invoke(writer);
+
+            writer.FinishBlock(); // Finish the namespace
+        }
+        
         public static void WriteNamespaceBlock(this StringBuilder writer, Table table,
             Action<StringBuilder> contentProvider)
         {
@@ -125,6 +135,18 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
             writer.WriteLine("}");
 
             writer.WriteSqlCommandMethod(command.Key, command.Value);
+
+            writer.FinishBlock(); // Finish the class
+        }
+        
+        public static void WriteDirectQueryApiClass(this StringBuilder writer, DatabaseOptionsBase options)
+        {
+            writer.WriteLine($"public class DirectQueryApi : DirectQueryApiBase<{options.GetType().FullName}>");
+            writer.WriteLine("{");
+
+            writer.WriteLine($"public DirectQueryApi(Microsoft.Extensions.Logging.ILogger<DirectQueryApi> logger) : base(logger)");
+            writer.WriteLine("{");
+            writer.WriteLine("}");
 
             writer.FinishBlock(); // Finish the class
         }

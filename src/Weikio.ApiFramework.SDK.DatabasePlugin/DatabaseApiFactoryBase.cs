@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration;
@@ -26,14 +27,14 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
 
                 re.Connect();
                 var schema = re.GetSchema();
-                
+
                 var generator = new CodeGenerator(pluginSettings, _loggerFactory.CreateLogger<CodeGenerator>());
                 var assembly = generator.GenerateAssembly(schema.Tables, schema.Commands, configuration);
 
                 var result = assembly.GetExportedTypes()
                     .Where(x => x.Name.EndsWith("Api"))
                     .ToList();
-                
+
                 _logger.LogDebug("Generated {ApiCount} APIs", result.Count);
 
                 return result;
