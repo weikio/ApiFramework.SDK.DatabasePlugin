@@ -158,7 +158,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
                     AssemblyGenerator = CodeGenerator.CodeToAssemblyGenerator,
                     TypeName = key
                 };
-
+                // CreateType method does not work properly if IncludedProperties contains @class.
                 var result = new TypeToTypeWrapper().CreateType(typeof(T), wrapperOptions);
 
                 return result;
