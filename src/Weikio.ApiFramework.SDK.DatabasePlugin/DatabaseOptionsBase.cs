@@ -79,5 +79,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin
         public abstract Compiler CreateCompiler();
 
         public bool IncludeDirectQuery { get; set; } = true;
+        
+        public TimeSpan? CommandTimeout { get; set; }
     }
 }

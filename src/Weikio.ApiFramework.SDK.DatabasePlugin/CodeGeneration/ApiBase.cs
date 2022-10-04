@@ -26,7 +26,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
         private static ConcurrentDictionary<string, Type> _cachedTypes = new ConcurrentDictionary<string, Type>();
 
         public TConfigurationType Configuration { get; set; }
-        
+
         protected async IAsyncEnumerable<object> RunSelect(string select, string filter, string orderby, int? top, int? skip, bool? count)
         {
             var fields = new List<string>();
@@ -40,9 +40,9 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
             {
                 throw new ArgumentNullException(nameof(Logger), "Logger is required");
             }
-            
+
             Logger.LogDebug("Prerequisites ok, proceeding creating the query");
-            
+
             using (var conn = Configuration.CreateConnection())
             {
                 await conn.OpenAsync();
@@ -55,10 +55,16 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
 
                     cmd.CommandText = queryAndParameters.Query;
 
+                    if (Configuration.CommandTimeout != null)
+                    {
+                        cmd.CommandTimeout = (int)Configuration.CommandTimeout.GetValueOrDefault().TotalSeconds;
+                    }
+
                     foreach (var prm in queryAndParameters.Parameters)
                     {
                         var commandParameter = cmd.CreateParameter();
                         commandParameter.ParameterName = prm.Key;
+
                         if (prm.Value == null)
                         {
                             commandParameter.Value = DBNull.Value;
@@ -92,9 +98,9 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
                         using (var reader = await cmd.ExecuteReaderAsync())
                         {
                             Logger.LogTrace("Opened reader");
+
                             while (await reader.ReadAsync())
                             {
-                                
                                 Logger.LogTrace("Line read, mapping to result item");
 
                                 if (generatedType != null)
@@ -109,7 +115,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
                                         {
                                             dbColumnValue = dbString.Trim();
                                         }
-                                        
+
                                         generatedType.InvokeMember(column.Value,
                                             BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,
                                             Type.DefaultBinder, item, new[] { dbColumnValue });
@@ -158,6 +164,7 @@ namespace Weikio.ApiFramework.SDK.DatabasePlugin.CodeGeneration
                     AssemblyGenerator = CodeGenerator.CodeToAssemblyGenerator,
                     TypeName = key
                 };
+
                 // CreateType method does not work properly if IncludedProperties contains @class.
                 var result = new TypeToTypeWrapper().CreateType(typeof(T), wrapperOptions);
 
